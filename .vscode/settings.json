@@ -1,0 +1,20 @@
+{
+    "files.associations": {
+        "stdio.h": "c",
+        "esp_spi_flash.h": "c",
+        "freertos.h": "c",
+        "task.h": "c",
+        "esp_system.h": "c",
+        "string.h": "c",
+        "esp_log.h": "c",
+        "i2c-lcd1602.h": "c",
+        "i2c.h": "c",
+        "sdkconfig.h": "c",
+        "uart.h": "c",
+        "smbus.h": "c",
+        "esp_timer.h": "c",
+        "esp_sleep.h": "c",
+        "gpio.h": "c"
+    },
+    //"terminal.integrated.shell.windows":"C:\\WINDOWS\\System32\\cmd.exe"
+}

@@ -1,0 +1,101 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "group": "build",
+            "command": "make",
+            "type": "shell",
+            "args": [],
+            "presentation": {
+                "reveal": "always",
+                "echo": true
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": "absolute",
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        },
+        {
+            "label": "clean",
+            "command": "idf.py",
+            "type": "shell",
+            "args": [
+                "clean"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "echo": true
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": "absolute",
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        },
+        {
+            "label": "flash",
+            "command": "make",
+            "type": "shell",
+            "args": [
+                "flash"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "echo": true
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": "absolute",
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        },
+        {
+            "label": "monitor",
+            "group": "build",
+            "command": "miniterm",
+            "type": "shell",
+            "args": ["--raw","/dev/ttyUSB0", "115200"],
+            "presentation": {
+                "reveal": "always",
+                "echo": true
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": "absolute",
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        }
+    ]
+}
