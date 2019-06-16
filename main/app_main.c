@@ -61,6 +61,7 @@ static double read_pot();
 static double read_sensor();
 static void read_pot_task(void * pvParameter);
 static void read_sensor_task(void * pvParameter);
+void read_temp_sensors_task(void * pvParameter);
 
 const int64_t SECOND = 1000000;
 
@@ -91,6 +92,9 @@ void app_main()
     // Analog pin teset for optical sensor
     adc1_config_channel_atten(ADC1_CHANNEL_1,ADC_ATTEN_DB_0);
 
+    // Analog pin teset for temp sensor01
+    adc1_config_channel_atten(ADC1_CHANNEL_2,ADC_ATTEN_DB_0);
+
     gpio_pad_select_gpio(RELAY_PIN);
     gpio_set_direction(RELAY_PIN, GPIO_MODE_OUTPUT);
 
@@ -100,6 +104,7 @@ void app_main()
     xTaskCreate(&read_pot_task, "read_pot_task", 4096, NULL, 5, NULL);
     xTaskCreate(&read_sensor_task, "read_sensor_task", 4096, NULL, 5, NULL);
     xTaskCreate(&update_display, "update_display", 4096, NULL, 5, NULL);
+    xTaskCreate(&read_temp_sensors_task, "read_temp_sensors", 4096, NULL, 5, NULL);
 
 }
 
@@ -249,6 +254,15 @@ void read_sensor_task(void * pvParameter) {
             trigger = false;
         }
         vTaskDelay(100 / portTICK_RATE_MS);
+    }
+    vTaskDelete(NULL);
+}
+
+void read_temp_sensors_task(void * pvParameter) {
+    while (1) {
+        int raw = adc1_get_raw(ADC1_CHANNEL_2);
+        vTaskDelay(1000 / portTICK_RATE_MS);
+        ESP_LOGI(TAG, "RAW TEMP: %d", raw);
     }
     vTaskDelete(NULL);
 }
