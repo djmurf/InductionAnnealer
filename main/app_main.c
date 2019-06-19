@@ -71,11 +71,11 @@ static double run_time=0.00;
 static int64_t start_time = 0;
 static int64_t time_since_boot = 0;
 static int annealing=0;
-bool trigger = false;
+int trigger = 0;
 
 
-void app_main()
-{
+void app_main() {
+
     esp_chip_info_t chip_info;
     esp_chip_info(&chip_info);
     printf("This is ESP32 chip with %d CPU cores. Revision: %d , WiFi%s%s\n",
@@ -111,8 +111,7 @@ void app_main()
 esp_timer_handle_t display_timer = NULL;
 esp_timer_handle_t anneal_timer = NULL;
 
-static void start_anneal()
-{
+static void start_anneal() {
 
     /* Create two timers:
      * 1. a periodic timer which will run every 0.5s, and print a message
@@ -120,8 +119,7 @@ static void start_anneal()
      *    timer with period of 1s.
      */
 
-    if (display_timer == NULL && anneal_timer == NULL)
-    {
+    if (display_timer == NULL && anneal_timer == NULL) {
         run_time = 0.00;
         annealing = 1;
         ESP_LOGI(TAG, "STARTING ANNEAL LOOP");
@@ -129,14 +127,16 @@ static void start_anneal()
 
         const esp_timer_create_args_t display_timer_args = {
             .callback = &update_runtime,
-            .name = "update_runtime"};
+            .name = "update_runtime"
+        };
 
         ESP_ERROR_CHECK(esp_timer_create(&display_timer_args, &display_timer));
         /* The timer has been created but is not running yet */
 
         const esp_timer_create_args_t anneal_timer_args = {
             .callback = &anneal_complete,
-            .name = "anneal"};
+            .name = "anneal"
+        };
 
         ESP_ERROR_CHECK(esp_timer_create(&anneal_timer_args, &anneal_timer));
 
@@ -146,13 +146,11 @@ static void start_anneal()
     }
 }
 
-static void anneal_complete(void *arg)
-{
+static void anneal_complete(void *arg) {
 
     annealing=0;
 
-    if (display_timer != NULL)
-    {
+    if (display_timer != NULL) {
         ESP_LOGI(TAG, "calling stop on timer...");
         ESP_ERROR_CHECK(esp_timer_stop(display_timer));
 
@@ -161,8 +159,7 @@ static void anneal_complete(void *arg)
         display_timer = NULL;
     }
 
-    if (anneal_timer != NULL)
-    {
+    if (anneal_timer != NULL) {
 
         ESP_LOGI(TAG, "calling delete on anneal_timer...");
         ESP_ERROR_CHECK(esp_timer_delete(anneal_timer));
@@ -173,29 +170,26 @@ static void anneal_complete(void *arg)
     drop_shell();
 }
 
-static void update_runtime(void *arg)
-{
+static void update_runtime(void *arg) {
+
     time_since_boot = esp_timer_get_time();
     //run_time = (time_since_boot - start_time)/1000000.0;
     run_time += 100000.00;
 }
 
-static void open_relay()
-{
+static void open_relay() {
     ESP_LOGI(TAG, "OPENING RELAY");
     gpio_set_level(RELAY_PIN, 0);
 
 }
 
-static void close_relay()
-{
+static void close_relay() {
     ESP_LOGI(TAG, "CLOSING RELAY");
     gpio_set_level(RELAY_PIN, 1);
 }
 
 
-static void drop_shell() 
-{
+static void drop_shell() {
     ESP_LOGI(TAG, "DROPPING SHELL");
     close_relay();
     vTaskDelay(1000 / portTICK_RATE_MS);
@@ -243,15 +237,15 @@ static double read_sensor() {
 void read_sensor_task(void * pvParameter) {
     while (1) {
         double sensor_reading = read_sensor();
-        if ( sensor_reading == 4095 && trigger == false ) { 
-            trigger = true;
+        if ( sensor_reading == 4095 && trigger == 0 ) {
+            trigger = 1;
             ESP_LOGI(TAG, "Sensor Triggered: %f", sensor_reading);
             // Let the shell settle for 1/2 sec.
             vTaskDelay(500 / portTICK_RATE_MS);
             start_anneal();
-        } else if ( trigger == true && sensor_reading < 4095 ) { 
+        } else if ( trigger == 1 && sensor_reading < 4095 ) {
             ESP_LOGI(TAG, "Sensor Trigger OFF");
-            trigger = false;
+            trigger = 0;
         }
         vTaskDelay(100 / portTICK_RATE_MS);
     }
@@ -274,6 +268,5 @@ void update_display(void * pvParameter) {
         vTaskDelay(100 / portTICK_RATE_MS);
     }
     vTaskDelete(NULL);
-
 }
 

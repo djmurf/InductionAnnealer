@@ -128,8 +128,7 @@
                 "${env:IDF_PATH}/components/wpa_supplicant/include/wpa2/eap_peer",
                 "${env:IDF_PATH}/components/wpa_supplicant/include/wpa2/tls",
                 "${env:IDF_PATH}/components/wpa_supplicant/include/wpa2/utils",
-                "${env:IDF_PATH}/components/xtensa-debug-module/include",
-                "C:/Program Files/Espressif/ESP-IDF Tools/toolchain/lib/gcc/xtensa-esp32-elf/5.2.0/include"
+                "${env:IDF_PATH}/components/xtensa-debug-module/include"
             ],
             "intelliSenseMode": "clang-x64",
             "browse": {
@@ -266,7 +265,6 @@
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": "${workspaceRoot}/.vscode/browse.vc.db"
             },
-            "intelliSenseMode": "clang-x64",
             "cStandard": "c99",
             "cppStandard": "c++11",
             "compilerPath": "\"${env:HOME}/esp32/xtensa-esp32-elf/bin/xtensa-esp32-elf-gcc\" -mlongcalls"
