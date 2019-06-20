@@ -14,7 +14,9 @@
         "smbus.h": "c",
         "esp_timer.h": "c",
         "esp_sleep.h": "c",
-        "gpio.h": "c"
+        "gpio.h": "c",
+        "math.h": "c",
+        "lcd.h": "c"
     },
     //"terminal.integrated.shell.windows":"C:\\WINDOWS\\System32\\cmd.exe"
 }

@@ -28,6 +28,42 @@
  */
 
 
+/**
+ * 
+ * 
+ * Parts and hookups: 
+ * 
+ * Optical Sensor: 
+ *      white -> Pin 37 w/10k pull down resistor to 3.3v
+ *      green -> Ground
+ *      black -> Ground
+ *      red -> 180ohm resistor -> 3.3v
+ * 
+ * Temp Sensors: 
+ *      TBD 
+ * 
+ * LED:
+ *      Green -> Ground
+ *      Blue -> 5v
+ *      Purple SDA ->  21 (SDA)
+ *      Gray SCL -> 22 (SCL)
+ * 
+ * POT: 
+ *      Sensor Pin -> 36 ADC1_0
+ *      Hot Pin -> 3.3v
+ *      Ground Pin -> Ground
+ * 
+ * RELAY: 
+ *      Pin 13 -> 1.2k Resistor -> Mosfet Base 
+ *      Ground -> Mosfet Emitter 
+ *      Ground -> 12V ground 
+ *      Solenoid Ground Mosfet Collector
+ *      Diode between Solenoid Ground/Hot Stripe towards hot
+ *      Solenoid Hot -> 12V Hot
+ * 
+ */
+
+
 #include "stdio.h"
 #include "string.h"
 #include "unistd.h"
@@ -50,6 +86,7 @@
 #define OPTICAL_SAMPLE_COUNT   10 
 
 #define RELAY_PIN    13
+
 static void start_anneal();
 static void anneal_complete(void *arg);
 static void update_runtime(void *arg);
@@ -57,27 +94,36 @@ static void update_display(void *arg);
 static void open_relay();
 static void close_relay();
 static void drop_shell();
-static double read_pot();
-static double read_sensor();
 static void read_pot_task(void * pvParameter);
 static void read_sensor_task(void * pvParameter);
-void read_temp_sensors_task(void * pvParameter);
+static void read_temp_sensors_task(void * pvParameter);
 
-const int64_t SECOND = 1000000;
+static void start_induction_annealer(); 
+static void stop_induction_annealer();
 
-static double anneal_time=6*1000000;
-static double run_time=0.00;
+static const int64_t SECOND = 1000000;
 
-static int64_t start_time = 0;
-static int64_t time_since_boot = 0;
-static int annealing=0;
-int trigger = 0;
+static double read_pot();
+static double read_sensor();
+static double anneal_time;
+static double run_time;
+static int64_t start_time;
+
+static int annealing;
+static int trigger;
 
 
 void app_main() {
 
     esp_chip_info_t chip_info;
     esp_chip_info(&chip_info);
+
+    anneal_time=6*1000000;
+    run_time = 0.00;
+    start_time = 0;
+    annealing = 0;
+    trigger =  0;
+
     printf("This is ESP32 chip with %d CPU cores. Revision: %d , WiFi%s%s\n",
            chip_info.cores,
            chip_info.revision,
@@ -97,14 +143,12 @@ void app_main() {
 
     gpio_pad_select_gpio(RELAY_PIN);
     gpio_set_direction(RELAY_PIN, GPIO_MODE_OUTPUT);
-
     gpio_set_level(RELAY_PIN, 0);
-
 
     xTaskCreate(&read_pot_task, "read_pot_task", 4096, NULL, 5, NULL);
     xTaskCreate(&read_sensor_task, "read_sensor_task", 4096, NULL, 5, NULL);
-    xTaskCreate(&update_display, "update_display", 4096, NULL, 5, NULL);
     xTaskCreate(&read_temp_sensors_task, "read_temp_sensors", 4096, NULL, 5, NULL);
+    xTaskCreate(&update_display, "update_display", 4096, NULL, 5, NULL);
 
 }
 
@@ -141,6 +185,7 @@ static void start_anneal() {
         ESP_ERROR_CHECK(esp_timer_create(&anneal_timer_args, &anneal_timer));
 
         /* Start the timers */
+        start_induction_annealer();
         ESP_ERROR_CHECK(esp_timer_start_periodic(display_timer, 100000));
         ESP_ERROR_CHECK(esp_timer_start_once(anneal_timer, anneal_time));
     }
@@ -149,6 +194,7 @@ static void start_anneal() {
 static void anneal_complete(void *arg) {
 
     annealing=0;
+    stop_induction_annealer();
 
     if (display_timer != NULL) {
         ESP_LOGI(TAG, "calling stop on timer...");
@@ -171,23 +217,26 @@ static void anneal_complete(void *arg) {
 }
 
 static void update_runtime(void *arg) {
-
-    time_since_boot = esp_timer_get_time();
-    //run_time = (time_since_boot - start_time)/1000000.0;
     run_time += 100000.00;
 }
 
 static void open_relay() {
     ESP_LOGI(TAG, "OPENING RELAY");
     gpio_set_level(RELAY_PIN, 0);
+}
 
+static void start_induction_annealer() {
+    ESP_LOGI(TAG, "STARTING INDUCTION ANNEALER");
+}
+
+static void stop_induction_annealer() {
+    ESP_LOGI(TAG, "STOPPING INDUCTION ANNEALER");
 }
 
 static void close_relay() {
     ESP_LOGI(TAG, "CLOSING RELAY");
     gpio_set_level(RELAY_PIN, 1);
 }
-
 
 static void drop_shell() {
     ESP_LOGI(TAG, "DROPPING SHELL");
@@ -210,7 +259,7 @@ static double read_pot() {
 }
 
 
-void read_pot_task(void * pvParameter) {
+static void read_pot_task(void * pvParameter) {
     while (1) {
         double adc_reading = read_pot();
         //anneal_time = adc_reading*SECOND;
@@ -234,7 +283,7 @@ static double read_sensor() {
     return adc_reading;
 }
 
-void read_sensor_task(void * pvParameter) {
+static void read_sensor_task(void * pvParameter) {
     while (1) {
         double sensor_reading = read_sensor();
         if ( sensor_reading == 4095 && trigger == 0 ) {
@@ -246,24 +295,26 @@ void read_sensor_task(void * pvParameter) {
         } else if ( trigger == 1 && sensor_reading < 4095 ) {
             ESP_LOGI(TAG, "Sensor Trigger OFF");
             trigger = 0;
+            vTaskDelay(500 / portTICK_RATE_MS);
         }
         vTaskDelay(100 / portTICK_RATE_MS);
     }
     vTaskDelete(NULL);
 }
 
-void read_temp_sensors_task(void * pvParameter) {
+static void read_temp_sensors_task(void * pvParameter) {
     while (1) {
         int raw = adc1_get_raw(ADC1_CHANNEL_2);
         vTaskDelay(1000 / portTICK_RATE_MS);
-        ESP_LOGI(TAG, "RAW TEMP: %d", raw);
+        //ESP_LOGI(TAG, "RAW TEMP: %d", raw);
     }
     vTaskDelete(NULL);
 }
 
-void update_display(void * pvParameter) {
+static void update_display(void * pvParameter) {
     while (1) {
         write_runtime(annealing, run_time/1000000.0);
+        //ESP_LOGI(TAG, "Anneal Time: %f", anneal_time/SECOND);
         write_anneal_time(anneal_time/SECOND);
         vTaskDelay(100 / portTICK_RATE_MS);
     }
