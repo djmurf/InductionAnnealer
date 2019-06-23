@@ -414,10 +414,6 @@ static void read_temp_sensors_task(void * pvParameter) {
         ds18b20_set_resolution(ds18b20_info, DS18B20_RESOLUTION);
     }
 
-    // Read temperatures more efficiently by starting conversions on all devices at the same time
-    //int errors_count[MAX_DEVICES] = {0};
-    //int sample_count = 0;
-
     if (num_temp_devices > 0) {
 
         while (1) {
@@ -442,7 +438,6 @@ static void read_temp_sensors_task(void * pvParameter) {
 static void update_display(void * pvParameter) {
     while (1) {
         write_runtime(annealing, run_time/1000000.0);
-        //ESP_LOGI(TAG, "Anneal Time: %f", anneal_time/SECOND);
         write_anneal_time(anneal_time/SECOND);
         write_temps(num_temp_devices, readings);
         vTaskDelay(100 / portTICK_RATE_MS);
