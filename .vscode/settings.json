@@ -16,7 +16,8 @@
         "esp_sleep.h": "c",
         "gpio.h": "c",
         "math.h": "c",
-        "lcd.h": "c"
+        "lcd.h": "c",
+        "u8g2.h": "c"
     },
     //"terminal.integrated.shell.windows":"C:\\WINDOWS\\System32\\cmd.exe"
 }

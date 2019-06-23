@@ -114,33 +114,33 @@
 // From output of: $IDF_PATH/components/esptool_py/esptool/espefuse.py --port /dev/ttyUSB0 adc_info
 #define V_REF   1128
 
-static void start_anneal();
-static void anneal_complete(void *arg);
-static void update_runtime(void *arg);
-static void update_display(void *arg);
-static void open_relay();
-static void close_relay();
-static void drop_shell();
-static void read_pot_task(void * pvParameter);
-static void read_sensor_task(void * pvParameter);
-static void read_temp_sensors_task(void * pvParameter);
-
-static void start_induction_annealer(); 
-static void stop_induction_annealer();
-
 static const int64_t SECOND = 1000000;
 
-static double read_pot();
-static double read_sensor();
-static double anneal_time;
-static double run_time;
-static int64_t start_time;
+void start_anneal();
+void anneal_complete(void *arg);
+void update_runtime(void *arg);
+void update_display(void *arg);
+void open_relay();
+void close_relay();
+void drop_shell();
+void read_pot_task(void * pvParameter);
+void read_sensor_task(void * pvParameter);
+void read_temp_sensors_task(void * pvParameter);
 
-static int annealing;
-static int trigger;
+void start_induction_annealer(); 
+void stop_induction_annealer();
 
-static int num_temp_devices;
-static float readings[MAX_DEVICES] ={0}; 
+double read_pot();
+double read_sensor();
+
+double anneal_time;
+double run_time;
+int64_t start_time;
+
+int annealing;
+int trigger;
+int num_temp_devices;
+float readings[MAX_DEVICES] ={0}; 
 
 void app_main() {
 
@@ -184,7 +184,7 @@ void app_main() {
 esp_timer_handle_t display_timer = NULL;
 esp_timer_handle_t anneal_timer = NULL;
 
-static void start_anneal() {
+void start_anneal() {
 
     /* Create two timers:
      * 1. a periodic timer which will run every 0.5s, and print a message
@@ -220,7 +220,7 @@ static void start_anneal() {
     }
 }
 
-static void anneal_complete(void *arg) {
+void anneal_complete(void *arg) {
 
     annealing=0;
     stop_induction_annealer();
@@ -245,39 +245,39 @@ static void anneal_complete(void *arg) {
     drop_shell();
 }
 
-static void update_runtime(void *arg) {
+void update_runtime(void *arg) {
     run_time += 100000.00;
 }
 
-static void open_relay() {
+void open_relay() {
     ESP_LOGI(TAG, "OPENING RELAY");
     gpio_set_level(RELAY_PIN, 0);
 }
 
-static void close_relay() {
+void close_relay() {
     ESP_LOGI(TAG, "CLOSING RELAY");
     gpio_set_level(RELAY_PIN, 1);
 }
 
-static void start_induction_annealer() {
+void start_induction_annealer() {
     ESP_LOGI(TAG, "STARTING INDUCTION ANNEALER");
     gpio_set_level(INDUCTION_BOARD_PIN, 1);
 }
 
-static void stop_induction_annealer() {
+void stop_induction_annealer() {
     ESP_LOGI(TAG, "STOPPING INDUCTION ANNEALER");
     gpio_set_level(INDUCTION_BOARD_PIN, 0);
 }
 
 
-static void drop_shell() {
+void drop_shell() {
     ESP_LOGI(TAG, "DROPPING SHELL");
     close_relay();
     vTaskDelay(1000 / portTICK_RATE_MS);
     open_relay();
 }
 
-static double read_pot() {
+double read_pot() {
     double adc_reading = 0;
     //Multisampling
     for (int i = 0; i < POT_SAMPLE_COUNT; i++) {
@@ -290,7 +290,7 @@ static double read_pot() {
 }
 
 
-static void read_pot_task(void * pvParameter) {
+void read_pot_task(void * pvParameter) {
     while (1) {
         double adc_reading = read_pot();
         anneal_time = adc_reading*SECOND;
@@ -303,7 +303,7 @@ static void read_pot_task(void * pvParameter) {
  * 10kohm between pin and ground 
  * 180ohm resistor on 3.3v -> Anode
  */
-static double read_sensor() {
+double read_sensor() {
     double adc_reading = 0;
     for (int i = 0; i < OPTICAL_SAMPLE_COUNT; i++) {
         int raw = adc1_get_raw(ADC1_CHANNEL_1);
@@ -313,7 +313,7 @@ static double read_sensor() {
     return adc_reading;
 }
 
-static void read_sensor_task(void * pvParameter) {
+void read_sensor_task(void * pvParameter) {
     while (1) {
         double sensor_reading = read_sensor();
         if ( sensor_reading == 4095 && trigger == 0 ) {
@@ -332,7 +332,7 @@ static void read_sensor_task(void * pvParameter) {
     vTaskDelete(NULL);
 }
 
-static void read_temp_sensors_task(void * pvParameter) {
+void read_temp_sensors_task(void * pvParameter) {
 
     // Stable readings require a brief period before communication
     vTaskDelay(2000.0 / portTICK_PERIOD_MS);
@@ -435,7 +435,7 @@ static void read_temp_sensors_task(void * pvParameter) {
 
 }
 
-static void update_display(void * pvParameter) {
+void update_display(void * pvParameter) {
     while (1) {
         write_runtime(annealing, run_time/1000000.0);
         write_anneal_time(anneal_time/SECOND);

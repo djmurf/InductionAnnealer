@@ -92,6 +92,7 @@ void write_runtime(int annealing, float t)
 }
 
 void write_temps(int num_temp_devices, float readings[]) {
+
     i2c_lcd1602_move_cursor(lcd_info, 6, 2);
 
     if ( num_temp_devices != NULL && num_temp_devices > 0 && readings != NULL ) {

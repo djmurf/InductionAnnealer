@@ -259,6 +259,7 @@
                     "${env:IDF_PATH}/components/wpa_supplicant/include/wpa2/tls",
                     "${env:IDF_PATH}/components/wpa_supplicant/include/wpa2/utils",
                     "${env:IDF_PATH}/components/xtensa-debug-module/include",
+                    "${env:IDF_PATH}/components/esp_adc_cal/include",
                     "${env:HOME}/esp/xtensa-esp32-elf/include"
                     
                 ],
