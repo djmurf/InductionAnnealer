@@ -86,6 +86,7 @@
 #include "sdkconfig.h"
 #include "driver/adc.h"
 #include "driver/gpio.h"
+#include "esp_adc_cal.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -108,6 +109,10 @@
 
 #define RELAY_PIN    13
 #define INDUCTION_BOARD_PIN    12
+
+// Helps smooth values.
+// From output of: $IDF_PATH/components/esptool_py/esptool/espefuse.py --port /dev/ttyUSB0 adc_info
+#define V_REF   1128
 
 static void start_anneal();
 static void anneal_complete(void *arg);
@@ -150,6 +155,10 @@ void app_main() {
 
     adc1_config_width(ADC_WIDTH_BIT_12);
     adc1_config_channel_atten(ADC1_CHANNEL_0,ADC_ATTEN_DB_11);
+
+    esp_adc_cal_characteristics_t characteristics;
+    esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_0, ADC_WIDTH_BIT_12, &characteristics);
+
 
     // Analog pin teset for optical sensor
     adc1_config_channel_atten(ADC1_CHANNEL_1,ADC_ATTEN_DB_0);
@@ -271,8 +280,7 @@ static void drop_shell() {
 static double read_pot() {
     double adc_reading = 0;
     //Multisampling
-    for (int i = 0; i < POT_SAMPLE_COUNT; i++)
-    {
+    for (int i = 0; i < POT_SAMPLE_COUNT; i++) {
         int raw = adc1_get_raw(ADC1_CHANNEL_0);
         adc_reading += raw;
     }
@@ -297,8 +305,7 @@ static void read_pot_task(void * pvParameter) {
  */
 static double read_sensor() {
     double adc_reading = 0;
-    for (int i = 0; i < OPTICAL_SAMPLE_COUNT; i++)
-    {
+    for (int i = 0; i < OPTICAL_SAMPLE_COUNT; i++) {
         int raw = adc1_get_raw(ADC1_CHANNEL_1);
         adc_reading += raw;
     }
@@ -383,6 +390,7 @@ static void read_temp_sensors_task(void * pvParameter) {
         bool is_present = false;
 
         owb_status search_status = owb_verify_rom(owb, known_device, &is_present);
+
         if (search_status == OWB_STATUS_OK) {
             printf("Device %s is %s\n", rom_code_s, is_present ? "present" : "not present");
         } else {
