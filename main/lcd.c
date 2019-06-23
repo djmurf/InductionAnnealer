@@ -63,27 +63,49 @@ void i2c_master_init(void)
     i2c_lcd1602_define_char(lcd_info, I2C_LCD1602_INDEX_CUSTOM_0, check);
 
     i2c_lcd1602_set_backlight(lcd_info, true);
+
+    i2c_lcd1602_move_cursor(lcd_info, 0, 2);
+    i2c_lcd1602_write_string(lcd_info, "Temps ");
 }
 
 void write_anneal_time(double t)
 {
-    i2c_lcd1602_move_cursor(lcd_info, 0, 0);
+    i2c_lcd1602_move_cursor(lcd_info, 0, 1);
     char *time; 
-    asprintf(&time, "%-14s %04.1fs", "Anneal Timer", t);
+    asprintf(&time, "%-13s %04.1fs", "Anneal Timer", t);
     i2c_lcd1602_write_string(lcd_info, time);
     free(time);
 }
 
 void write_runtime(int annealing, float t)
 {
-    i2c_lcd1602_move_cursor(lcd_info, 0, 1);
+    i2c_lcd1602_move_cursor(lcd_info, 0, 0);
     char *time; 
 
     if ( annealing == 1 ) { 
-        asprintf(&time, "%-14s %04.01fs", "Annealing", t);
+        asprintf(&time, "%-13s %04.01fs", "Annealing", t);
     } else { 
-        asprintf(&time, "%-14s %04.01fs", "Feed Shell", t);
+        asprintf(&time, "%-13s %04.01fs", "Feed Brass", t);
     }
     i2c_lcd1602_write_string(lcd_info, time);
     free(time);
+}
+
+void write_temps(int num_temp_devices, float readings[]) {
+    i2c_lcd1602_move_cursor(lcd_info, 6, 2);
+
+    if ( num_temp_devices != NULL && num_temp_devices > 0 && readings != NULL ) {
+        for (int i = 0; i < num_temp_devices; ++i) {
+            //printf("  %d: %.1f %.1f\n", i, readings[i], readings[i] * 1.8 + 32);
+            float fahrenheit = (readings[i]*1.8)+32;
+            char *temp; 
+            asprintf(&temp, "%5.1f\xDF ",fahrenheit);
+            i2c_lcd1602_write_string(lcd_info, temp);
+            if ( i == 2 ) { 
+                i2c_lcd1602_move_cursor(lcd_info, 6, 3);
+            }
+            free(temp);
+
+        }
+    }
 }
