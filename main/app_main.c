@@ -22,11 +22,6 @@
  * SOFTWARE.
  */
 
-/**
- * @file app_main.c
- * @brief Example application for the LCD1602 16x2 Character Dot Matrix LCD display via I2C backpack..
- */
-
 
 /**
  * 
@@ -97,10 +92,10 @@
 #include "owb.h"
 #include "owb_rmt.h"
 #include "ds18b20.h"
-#define GPIO_DS18B20_0       14
-#define MAX_DEVICES          (8)
-#define DS18B20_RESOLUTION   (DS18B20_RESOLUTION_12_BIT)
-#define SAMPLE_PERIOD        (1000)   // milliseconds
+
+#define GPIO_DS18B20_0      14
+#define MAX_TEMP_DEVICES    (8)
+#define DS18B20_RESOLUTION  (DS18B20_RESOLUTION_12_BIT)
 
 #define TAG "main"
 #define POT_SAMPLE_COUNT   32 
@@ -112,9 +107,8 @@
 // Helps smooth values.
 // From output of: $IDF_PATH/components/esptool_py/esptool/espefuse.py --port /dev/ttyUSB0 adc_info
 #define V_REF   1128
-//#define V_REF   1100
 
-static const int64_t SECOND = 1000000;
+const int64_t SECOND = 1000000;
 
 void start_anneal();
 void anneal_complete(void *arg);
@@ -140,7 +134,8 @@ int64_t start_time;
 int annealing;
 int trigger;
 int num_temp_devices;
-float readings[MAX_DEVICES] ={0}; 
+
+float readings[MAX_TEMP_DEVICES] ={0}; 
 
 void app_main() {
 
@@ -156,7 +151,6 @@ void app_main() {
     //esp_adc_cal_characteristics_t characteristics;
     //esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_0, ADC_WIDTH_BIT_12, &characteristics);
 
-
     // Analog pin teset for optical sensor
     adc1_config_channel_atten(ADC1_CHANNEL_1,ADC_ATTEN_DB_0);
 
@@ -171,10 +165,10 @@ void app_main() {
     gpio_set_direction(INDUCTION_BOARD_PIN, GPIO_MODE_OUTPUT);
     gpio_set_level(INDUCTION_BOARD_PIN, 0);
 
-    xTaskCreate(&read_pot_task, "read_pot_task", 4096, NULL, 5, NULL);
-    xTaskCreate(&read_sensor_task, "read_sensor_task", 4096, NULL, 5, NULL);
-    xTaskCreate(&read_temp_sensors_task, "read_temp_sensors", 4096, NULL, 5, NULL);
-    xTaskCreate(&update_display, "update_display", 4096, NULL, 5, NULL);
+    xTaskCreate(&read_pot_task,             "read_pot_task",        4096, NULL, 5, NULL);
+    xTaskCreate(&read_sensor_task,          "read_sensor_task",     4096, NULL, 5, NULL);
+    xTaskCreate(&read_temp_sensors_task,    "read_temp_sensors",    4096, NULL, 5, NULL);
+    xTaskCreate(&update_display,            "update_display",       4096, NULL, 5, NULL);
 
 }
 
@@ -183,13 +177,8 @@ esp_timer_handle_t anneal_timer = NULL;
 
 void start_anneal() {
 
-    /* Create two timers:
-     * 1. a periodic timer which will run every 0.5s, and print a message
-     * 2. a one-shot timer which will fire after 5s, and re-start periodic
-     *    timer with period of 1s.
-     */
-
     if (display_timer == NULL && anneal_timer == NULL) {
+
         run_time = 0.00;
         annealing = 1;
         ESP_LOGI(TAG, "STARTING ANNEAL LOOP");
@@ -214,6 +203,7 @@ void start_anneal() {
         start_induction_annealer();
         ESP_ERROR_CHECK(esp_timer_start_periodic(display_timer, 100000));
         ESP_ERROR_CHECK(esp_timer_start_once(anneal_timer, anneal_time));
+
     }
 }
 
@@ -316,8 +306,8 @@ void read_sensor_task(void * pvParameter) {
         if ( sensor_reading == 4095 && trigger == 0 ) {
             trigger = 1;
             ESP_LOGI(TAG, "Sensor Triggered: %f", sensor_reading);
-            // Let the shell settle for 1/2 sec.
-            vTaskDelay(500 / portTICK_RATE_MS);
+            // Let the shell settle for 1 sec.
+            vTaskDelay(1000 / portTICK_RATE_MS);
             start_anneal();
         } else if ( trigger == 1 && sensor_reading < 4095 ) {
             ESP_LOGI(TAG, "Sensor Trigger OFF");
@@ -342,10 +332,11 @@ void read_temp_sensors_task(void * pvParameter) {
 
     // Find all connected devices
     printf("Find devices:\n");
-    OneWireBus_ROMCode device_rom_codes[MAX_DEVICES] = {0};
+    OneWireBus_ROMCode device_rom_codes[MAX_TEMP_DEVICES] = {0};
     OneWireBus_SearchState search_state = {0};
     bool found = false;
     owb_search_first(owb, &search_state, &found);
+
     while (found) {
         char rom_code_s[17];
         owb_string_from_rom_code(search_state.rom_code, rom_code_s, sizeof(rom_code_s));
@@ -354,6 +345,7 @@ void read_temp_sensors_task(void * pvParameter) {
         ++num_temp_devices;
         owb_search_next(owb, &search_state, &found);
     }
+
     printf("Found %d device%s\n", num_temp_devices, num_temp_devices == 1 ? "" : "s");
 
     // In this example, if a single device is present, then the ROM code is probably
@@ -396,7 +388,7 @@ void read_temp_sensors_task(void * pvParameter) {
     }
 
     // Create DS18B20 devices on the 1-Wire bus
-    DS18B20_Info * devices[MAX_DEVICES] = {0};
+    DS18B20_Info * devices[MAX_TEMP_DEVICES] = {0};
     for (int i = 0; i < num_temp_devices; ++i) {
         DS18B20_Info * ds18b20_info = ds18b20_malloc();  // heap allocation
         devices[i] = ds18b20_info;
