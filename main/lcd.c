@@ -108,5 +108,8 @@ void write_temps(int num_temp_devices, float readings[]) {
             free(temp);
 
         }
+    } else { 
+        i2c_lcd1602_move_cursor(lcd_info, 0, 2);
+        i2c_lcd1602_write_string(lcd_info, "                    ");
     }
 }

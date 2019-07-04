@@ -71,7 +71,6 @@
  *      Ground -> Mosfet Emitter 
  *      Ground -> 12V ground 
  *      Relay Ground Mosfet Collector
- *      Diode between Solenoid Ground/Hot Stripe towards hot
  *      Relay Hot -> 12V Hot
  * 
  */
@@ -113,6 +112,7 @@
 // Helps smooth values.
 // From output of: $IDF_PATH/components/esptool_py/esptool/espefuse.py --port /dev/ttyUSB0 adc_info
 #define V_REF   1128
+//#define V_REF   1100
 
 static const int64_t SECOND = 1000000;
 
@@ -153,11 +153,8 @@ void app_main() {
 
     i2c_master_init();
 
-    adc1_config_width(ADC_WIDTH_BIT_12);
-    adc1_config_channel_atten(ADC1_CHANNEL_0,ADC_ATTEN_DB_11);
-
-    esp_adc_cal_characteristics_t characteristics;
-    esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_0, ADC_WIDTH_BIT_12, &characteristics);
+    //esp_adc_cal_characteristics_t characteristics;
+    //esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_0, ADC_WIDTH_BIT_12, &characteristics);
 
 
     // Analog pin teset for optical sensor
@@ -204,8 +201,8 @@ void start_anneal() {
         };
 
         ESP_ERROR_CHECK(esp_timer_create(&display_timer_args, &display_timer));
-        /* The timer has been created but is not running yet */
 
+        /* The timer has been created but is not running yet */
         const esp_timer_create_args_t anneal_timer_args = {
             .callback = &anneal_complete,
             .name = "anneal"
@@ -285,14 +282,14 @@ double read_pot() {
         adc_reading += raw;
     }
     adc_reading = (adc_reading/POT_SAMPLE_COUNT)*.00245;
-    double rounded_down = floorf(adc_reading * 10) / 10;
-    return rounded_down;
+    return floorf(adc_reading * 10) / 10;
 }
 
 
 void read_pot_task(void * pvParameter) {
     while (1) {
         double adc_reading = read_pot();
+        //ESP_LOGI(TAG, "Reading: %f", adc_reading);
         anneal_time = adc_reading*SECOND;
         vTaskDelay(100 / portTICK_RATE_MS);
     }

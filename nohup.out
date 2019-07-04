@@ -172,3 +172,8 @@ QSvgHandler: Image filename is empty
 QSvgHandler: Image filename is empty
 QSvgHandler: Image filename is empty
 QSvgHandler: Image filename is empty
+QString::arg: Argument missing: Do you want to keep the imported parts?, control_board.fzz
+qt.network.ssl: QSslSocket: cannot call unresolved function CRYPTO_num_locks
+qt.network.ssl: QSslSocket: cannot call unresolved function CRYPTO_set_id_callback
+qt.network.ssl: QSslSocket: cannot call unresolved function CRYPTO_set_locking_callback
+qt.network.ssl: QSslSocket: cannot call unresolved function ERR_free_strings
