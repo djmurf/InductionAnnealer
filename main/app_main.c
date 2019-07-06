@@ -146,16 +146,18 @@ void app_main() {
     trigger =  0;
     num_temp_devices = 0;
 
-    i2c_master_init();
+    //i2c_master_init();
 
     //esp_adc_cal_characteristics_t characteristics;
     //esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_0, ADC_WIDTH_BIT_12, &characteristics);
 
-    // Analog pin teset for optical sensor
-    adc1_config_channel_atten(ADC1_CHANNEL_1,ADC_ATTEN_DB_0);
+    adc1_config_width(ADC_WIDTH_BIT_12);
 
-    // Analog pin teset for temp sensor01
-    adc1_config_channel_atten(ADC1_CHANNEL_2,ADC_ATTEN_DB_0);
+    // Analog pin for potentiometer 
+    adc1_config_channel_atten(ADC1_CHANNEL_0,ADC_ATTEN_DB_11);
+
+    // Analog pin for sensor 
+    adc1_config_channel_atten(ADC1_CHANNEL_1,ADC_ATTEN_DB_11);
 
     gpio_pad_select_gpio(RELAY_PIN);
     gpio_set_direction(RELAY_PIN, GPIO_MODE_OUTPUT);
@@ -209,8 +211,11 @@ void start_anneal() {
 
 void anneal_complete(void *arg) {
 
-    annealing=0;
-    stop_induction_annealer();
+    if (anneal_timer != NULL) {
+        ESP_LOGI(TAG, "calling delete on anneal_timer...");
+        ESP_ERROR_CHECK(esp_timer_delete(anneal_timer));
+        anneal_timer = NULL;
+    }
 
     if (display_timer != NULL) {
         ESP_LOGI(TAG, "calling stop on timer...");
@@ -221,15 +226,10 @@ void anneal_complete(void *arg) {
         display_timer = NULL;
     }
 
-    if (anneal_timer != NULL) {
-
-        ESP_LOGI(TAG, "calling delete on anneal_timer...");
-        ESP_ERROR_CHECK(esp_timer_delete(anneal_timer));
-        anneal_timer = NULL;
-    }
-
-    ESP_LOGI(TAG, "anneal_complete");
+    annealing=0;
+    stop_induction_annealer();
     drop_shell();
+    ESP_LOGI(TAG, "anneal_complete");
 }
 
 void update_runtime(void *arg) {
@@ -303,6 +303,7 @@ double read_sensor() {
 void read_sensor_task(void * pvParameter) {
     while (1) {
         double sensor_reading = read_sensor();
+        //ESP_LOGI(TAG, "Reading: %f", sensor_reading);
         if ( sensor_reading == 4095 && trigger == 0 ) {
             trigger = 1;
             ESP_LOGI(TAG, "Sensor Triggered: %f", sensor_reading);
