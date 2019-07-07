@@ -132,6 +132,7 @@ double run_time;
 int64_t start_time;
 
 int annealing;
+int dropping;
 int trigger;
 int num_temp_devices;
 
@@ -143,6 +144,7 @@ void app_main() {
     run_time = 0.00;
     start_time = 0;
     annealing = 0;
+    dropping = 0;
     trigger =  0;
     num_temp_devices = 0;
 
@@ -226,9 +228,9 @@ void anneal_complete(void *arg) {
         display_timer = NULL;
     }
 
-    annealing=0;
     stop_induction_annealer();
     drop_shell();
+    annealing=0;
     ESP_LOGI(TAG, "anneal_complete");
 }
 
@@ -258,10 +260,13 @@ void stop_induction_annealer() {
 
 
 void drop_shell() {
+    dropping = 1;
     ESP_LOGI(TAG, "DROPPING SHELL");
     close_relay();
     vTaskDelay(1000 / portTICK_RATE_MS);
     open_relay();
+    vTaskDelay(1000 / portTICK_RATE_MS);
+    dropping = 0;
 }
 
 double read_pot() {
@@ -304,7 +309,7 @@ void read_sensor_task(void * pvParameter) {
     while (1) {
         double sensor_reading = read_sensor();
         //ESP_LOGI(TAG, "Reading: %f", sensor_reading);
-        if ( sensor_reading == 4095 && trigger == 0 ) {
+        if ( sensor_reading == 4095 && trigger == 0 && dropping == 0 && annealing == 0) {
             trigger = 1;
             ESP_LOGI(TAG, "Sensor Triggered: %f", sensor_reading);
             // Let the shell settle for 1 sec.
@@ -313,7 +318,7 @@ void read_sensor_task(void * pvParameter) {
         } else if ( trigger == 1 && sensor_reading < 4095 ) {
             ESP_LOGI(TAG, "Sensor Trigger OFF");
             trigger = 0;
-            vTaskDelay(500 / portTICK_RATE_MS);
+            vTaskDelay(1000 / portTICK_RATE_MS);
         }
         vTaskDelay(100 / portTICK_RATE_MS);
     }
